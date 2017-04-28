@@ -3307,11 +3307,11 @@ PHP_METHOD(Redis, getLastError) {
     }
 
 	/* Return our last error or NULL if we don't have one */
-	if(redis_sock->err != NULL && redis_sock->err_len > 0) {
-		RETURN_STRINGL(redis_sock->err, redis_sock->err_len);
-	} else {
+    if (redis_sock->err == NULL) {
 		RETURN_NULL();
-	}
+	} else {
+        RETURN_STRINGL(redis_sock->err->val, redis_sock->err->len);
+    }
 }
 
 /* {{{ proto Redis::clearLastError() */

@@ -116,11 +116,11 @@ static void
 redis_error_throw(RedisSock *redis_sock TSRMLS_DC)
 {
     if (redis_sock != NULL && redis_sock->err != NULL &&
-        memcmp(redis_sock->err, "ERR", sizeof("ERR") - 1) != 0 &&
-        memcmp(redis_sock->err, "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
-        memcmp(redis_sock->err, "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
+        memcmp(redis_sock->err->val, "ERR", sizeof("ERR") - 1) != 0 &&
+        memcmp(redis_sock->err->val, "NOSCRIPT", sizeof("NOSCRIPT") - 1) != 0 &&
+        memcmp(redis_sock->err->val, "WRONGTYPE", sizeof("WRONGTYPE") - 1) != 0
     ) {
-        zend_throw_exception(redis_exception_ce, redis_sock->err, 0 TSRMLS_CC);
+        zend_throw_exception(redis_exception_ce, redis_sock->err->val, 0 TSRMLS_CC);
     }
 }
 
@@ -1484,7 +1484,6 @@ redis_sock_create(char *host, int host_len, unsigned short port,
     redis_sock->pipeline_len = 0;
 
     redis_sock->err = NULL;
-    redis_sock->err_len = 0;
 
     redis_sock->scan = REDIS_SCAN_NORETRY;
     
@@ -1650,17 +1649,13 @@ redis_sock_set_err(RedisSock *redis_sock, const char *msg, int msg_len)
 {
     // Free our last error
     if (redis_sock->err != NULL) {
-        efree(redis_sock->err);
+        zend_string_release(redis_sock->err);
+        redis_sock->err = NULL;
     }
 
     if (msg != NULL && msg_len > 0) {
         // Copy in our new error message
-        redis_sock->err = estrndup(msg, msg_len);
-        redis_sock->err_len = msg_len;
-    } else {
-        // Set to null, with zero length
-        redis_sock->err = NULL;
-        redis_sock->err_len = 0;
+        redis_sock->err = zend_string_init(msg, msg_len, 0);
     }
 }
 
